@@ -292,6 +292,20 @@ layui.define('jquery', function(exports){
       return filter ? ('[lay-filter="' + filter +'"]') : '';
     }(), items = {
       
+		//其他标签convert显示
+		convertText: function(){
+			var ELEM = '.layui-convert-text';
+			var convertArray = {};
+			var srcArray = {};
+			$(ELEM).each(function(){
+				if($(this).attr('convert')&&$(this).attr('gvalue')){
+					var convertName = $(this).attr('convert'),value = $(this).attr('gvalue');
+					if(!convertArray[convertName]){convertArray = $.extend(convertArray, layer.getConvert([convertName]));}
+					$(this).text(convertArray[convertName][value]||value);
+	        	}
+			});
+		},
+        	      
       //Tab选项卡
       tab: function(){
         call.tabAuto.call({});

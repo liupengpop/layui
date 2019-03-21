@@ -177,7 +177,126 @@ var layer = {
       fixed: false,
       maxWidth: 210
     }, options));
-  }
+  },
+  ajax: function(ajaxOptions,isTimeStamp){
+	  	if(!ajaxOptions.url){
+	  		layer.msg('没有ajax url参数！');
+			return;
+		}
+	  	var load_layer;
+		if(ajaxOptions.notShowLoading!=true){
+			load_layer = layer.msg(ajaxOptions.wait||'努力加载中...', {icon: 16,shade: [0.5, '#f5f5f5'],scrollbar: false,offset: '0px', time:100000});
+		}
+		
+		isTimeStamp = false;
+		if(isTimeStamp&&ajaxOptions.data){
+			ajaxOptions.data+=('&youi-timeStamp='+new Date().getTime());
+		}
+		
+		var options = $.extend({},{
+			dataType:'json',
+			type:'POST',
+			contentType:'application/x-www-form-urlencoded;charset=UTF-8',//配置提交的contentType
+			error:function(errMsg){
+				layer.alert("数据接口请求异常!",{icon: 5});
+			}
+		},ajaxOptions);
+		
+		var oldSuccess = options.success || function(){};
+		var oldError =  options.error || function(){};
+		
+		options.complete = options.complete||function(jqXHR, statusText, responseText){
+			if(statusText=='error'){
+				//this.error.apply(this,[responseText]);
+			}
+			if(load_layer){
+				layer.close(load_layer);
+			}
+		}
+		
+		options.success = function(results){
+			if (results.code && results.msg) {
+				if(results.code=='0'||results.code=='000000'){
+					layer.alert(results.msg,{icon: 1});
+				}else{
+					layer.alert(results.msg,{icon: 5});
+				}
+			}else{
+				oldSuccess.apply(options,[results]);
+			}
+		};
+		
+		$.ajax(options);
+	},
+	getConvert: function(converts){
+		  var convertArray = [];
+		  if(converts){
+		  	var params = [];
+		  	converts.forEach(function(ele,i){
+				params.push('name='+converts[i]);
+			});
+			layer.ajax({
+				url: gateway.convertUrl(),
+				data:params.join('&'),
+				notShowLoading:true,
+				async:false,
+				success: function(result){
+					convertArray = result.record;
+			  	},
+			  	error:function(errMsg){
+					console.error('convert数据接口异常:'+converts);
+					convertArray = [];
+				}
+			});
+		  }
+		  converts.forEach(function(ele,i){
+			  if(!convertArray[converts[i]]){
+				  convertArray[converts[i]] = {};
+			  }
+		  });
+		  return convertArray;
+	},
+	buildSelectOptions : function(records,code,show){
+		  code = code || 'code',show = show || 'show';
+		  if(records){
+				var html = ['<option value=""></option>'];
+				records.forEach(function(record,i){
+					html.push('<option value='+record[code]+'>'+record[show]+'</option>');
+				});
+				return html.join('');
+		  }
+		  return '';
+	},
+	buildConvertOptions : function(convertName){
+		var convertArray = layer.getConvert([convertName]);
+		if(convertArray&&convertArray[convertName]){
+			var converts = convertArray[convertName];
+			var html = ['<option value=""></option>'];
+			for(var i in converts){
+				html.push('<option value='+i+'>'+converts[i]+'</option>');
+			}
+			return html.join('');
+		}
+		return '';
+	},
+	getFieldValue: function(record,property){
+		  if(!property)return;
+		  var value = record[property];
+		  try {
+			  var properties = property.split('.');
+			  if(properties.length>1){
+				  value = record;
+				  for(var i=0;i<properties.length;i++){
+					  value = value[properties[i]];
+					  if(!value||value=='')return;
+				  }
+			  }else{
+				  value = record[property];
+			  }
+		  } catch (e) {
+		  }
+		  return value;
+	}
 };
 
 var Class = function(setings){  

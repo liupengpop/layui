@@ -66,7 +66,7 @@ layui.define('jquery', function(exports){
         
         //节点
         ,function(){
-          return '<a href="'+ (item.href || 'javascript:;') +'" '+ (
+          return '<a class="layui-tree-node" href="'+ (item.href || 'javascript:;') +'" '+ (
             options.target && item.href ? 'target=\"'+ options.target +'\"' : ''
           ) +'>'
           + ('<i class="layui-icon layui-tree-'+ (hasChild ? "branch" : "leaf") +'">'+ (
@@ -74,7 +74,7 @@ layui.define('jquery', function(exports){
               item.spread ? icon.branch[1] : icon.branch[0]
             ) : icon.leaf
           ) +'</i>') //节点图标
-          + ('<cite>'+ (item.name||'未命名') +'</cite></a>');
+          + ('<cite>'+ (item.name||item.text||'未命名') +'</cite></a>');
         }()
       
       ,'</li>'].join(''));
@@ -103,7 +103,7 @@ layui.define('jquery', function(exports){
     var that = this, options = that.options;
     elem.children('a').on('click', function(e){
       layui.stope(e);
-      options.click(item)
+      options.click(elem,item)
     });
   };
   

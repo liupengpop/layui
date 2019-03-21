@@ -61,6 +61,12 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
       ,resize: function(){ //重置表格尺寸/结构
         that.resize.call(that);
       }
+      ,reloadBuild: function(elem){
+        return that.reloadBuild.call(that, elem);
+      }
+      ,exportRecords: function(elem){
+        return that.exportRecords.call(that, elem);
+      }
       ,config: options
     }
   }
@@ -321,7 +327,31 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
       th.height(that.layHeader.height() - 1 - parseFloat(th.css('padding-top')) - parseFloat(th.css('padding-bottom')));
     }
     
-    that.pullData(that.page); //请求数据
+    if(!that.config.convertArray){
+    	that.config.convertArray = [];
+        var converts = [];
+        var colsArray = that.config.cols;
+        for(var i in colsArray){
+        	var cols = colsArray[i];
+        	if($.isArray(cols)){
+        		cols.forEach(function(elem,i){
+              	  if(elem.field&&elem.convert){
+              		  converts.push(elem.convert);
+              	  }
+            	});
+        	}
+        }
+        if(converts&&converts.length>0){
+        	that.config.convertArray = layer.getConvert(converts);
+        }
+    }
+    
+    //请求数据
+    if(options.load==false){
+    	options.load = true;
+    }else{
+    	that.pullData(that.page);
+    }
     that.events(); //事件
   };
   
@@ -518,7 +548,7 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
     //减去边框差和滚动条宽
     cntrWidth = cntrWidth - function(){
       return (options.skin === 'line' || options.skin === 'nob') ? 2 : colNums + 1;
-    }() - that.getScrollWidth(that.layMain[0]) - 1;
+    }() - that.getScrollWidth(that.layMain[0]) - 15;
 
     //计算自动分配的宽度
     var getAutoWidth = function(back){
@@ -703,7 +733,7 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
 
       that.renderData(res, curr, options.data.length), sort();
       that.setColsWidth();
-      typeof options.done === 'function' && options.done(res, curr, res[response.countName]);
+      typeof options.done === 'function' && options.done(res, curr, res[response.countName],that.config.convertArray);
     }
   };
   
@@ -741,7 +771,7 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
         that.eachCols(function(i3, item3){
           var field = item3.field || i3
           ,key = options.index + '-' + item3.key
-          ,content = item1[field];
+          ,content = layer.getFieldValue(item1,field);
           
           if(content === undefined || content === null) content = '';
           if(item3.colGroup) return;
@@ -904,8 +934,13 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
       
       that.eachCols(function(i3, item3){
         var field = item3.field || i3
-        ,content = item1[field];
-
+        ,content = layer.getFieldValue(item1,field);
+        
+  	    if(item3.field&&item3.convert){
+		  var convertRecord = that.config.convertArray[item3.convert];
+		  content = (convertRecord&&convertRecord[content])||content;
+	    }
+  	  
         if(item3.totalRow){ 
           totalNums[field] = (totalNums[field] || 0) + (parseFloat(content) || 0);
         }
@@ -1682,6 +1717,62 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
     });
   };
   
+  //查询条件构建
+  Class.prototype.reloadBuild = function(elem){
+	 var params = {};
+	 if(elem){
+		 elem.find('.layui-input, .field-input').each(function(index){
+			var property = $(this).attr('name');
+			var value = $(this).val();
+			var operator = $(this).attr('operator');
+			if(property&&value){
+				params[property] = value;
+				if(operator){
+					params['operator:'+property] = operator;
+				}
+			}
+		});
+	 }
+	 return params;
+  };
+  
+  //导出
+  Class.prototype.exportRecords = function(opts){
+	 if(opts){
+		var that = this,options = that.config;
+	    var page = opts.page||options.page.curr,maxSize = opts.maxSize||options.limit,
+	    type = opts.type||'xls',cols = opts.cols||options.cols[0];
+	    var params = [];
+	    
+	    if(opts.params){
+	    	try {
+				for(var i in opts.params){
+					params.push(i+'='+opts.params[i]);
+				}
+			} catch (e) {
+			}
+	    }
+	    
+	    params.push(opts.title?('pager:exportTitle='+opts.title):'');
+	    params.push('page='+page);
+	    params.push('limit='+maxSize);
+	    params.push('pager:export='+type);
+	    
+	    cols.forEach(function(item,i){
+	    	if(item&&item.field){
+				  params.push('pager:header='+item.title);
+				  params.push('pager:property='+item.field);
+				  params.push('pager:convert='+(item.convert||'noConvert'));
+			 }
+	    });
+	    
+	    var url = opts.url||options.url;
+	    var formSrc = url+(url.indexOf('?')==-1?'?':'&')+ params.join('&');
+	    formSrc = encodeURI(encodeURI(formSrc));
+	    window.open(formSrc);
+	 }
+  };
+  
   //初始化
   table.init = function(filter, settings){
     settings = settings || {};
@@ -1896,7 +1987,8 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
     var config = getThisTableConfig(id); //获取当前实例配置项
     if(!config) return;
     
-    if(options.data && options.data.constructor === Array) delete config.data;    
+    if(options.data && options.data.constructor === Array) delete config.data;
+    if(options.where)delete config.where;//如果如where条件把缓存where条件删除
     return table.render($.extend(true, {}, config, options));
   };
  
