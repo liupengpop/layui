@@ -197,8 +197,8 @@ var layer = {
 			dataType:'json',
 			type:'POST',
 			contentType:'application/x-www-form-urlencoded;charset=UTF-8',//配置提交的contentType
-			error:function(errMsg){
-				layer.alert("数据接口请求异常!",{icon: 5});
+			error:function(e){
+				layer.alert(layer.ajaxErrorMsg(e),{icon: 5});
 			}
 		},ajaxOptions);
 		
@@ -229,23 +229,26 @@ var layer = {
 		$.ajax(options);
 	},
 	getConvert: function(converts){
-		  var convertArray = [];
+		  var convertArray = {};
 		  if(converts){
 		  	var params = [];
 		  	converts.forEach(function(ele,i){
-				params.push('name='+converts[i]);
+				params.push('names='+converts[i]);
 			});
-			layer.ajax({
+			$.ajax({
 				url: gateway.convertUrl(),
 				data:params.join('&'),
 				notShowLoading:true,
 				async:false,
 				success: function(result){
-					convertArray = result.record;
+					if(result.data){
+						convertArray = result.data;
+					}else{
+						console.error('convert数据接口异常:'+converts);
+					}
 			  	},
 			  	error:function(errMsg){
 					console.error('convert数据接口异常:'+converts);
-					convertArray = [];
 				}
 			});
 		  }
@@ -296,6 +299,13 @@ var layer = {
 		  } catch (e) {
 		  }
 		  return value;
+	},
+	ajaxErrorMsg: function(e){
+		var msg = "服务异常";
+		if(gateway.errorMsg && e && e.responseJSON && e.responseJSON.message){
+			msg = msg + ":" + e.responseJSON.message;
+		}
+		return msg;
 	}
 };
 

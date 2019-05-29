@@ -259,7 +259,7 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
     //响应数据的自定义格式
     options.response = $.extend({
       statusName: 'code'
-      ,statusCode: 0
+      ,statusCode: '000000'
       ,msgName: 'msg'
       ,dataName: 'data'
       ,countName: 'count'
@@ -706,11 +706,10 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
           }
           //检查数据格式是否符合规范
           if(res[response.statusName] != response.statusCode){
-            that.renderForm();
             that.layMain.html('<div class="'+ NONE +'">'+ (
               res[response.msgName] ||
-              ('返回的数据不符合规范，正确的成功状态码 ('+ response.statusName +') 应为：'+ response.statusCode)
-            ) +'</div>');
+              ('返回的数据不符合规范，正确的成功状态码 ('+ response.statusName +') 应为：'+ response.statusCode)) +'</div>');
+            that.renderForm();
           } else {
             that.renderData(res, curr, res[response.countName]), sort();
             options.time = (new Date().getTime() - that.startTime) + ' ms'; //耗时（接口请求+视图渲染）
@@ -719,7 +718,7 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
           typeof options.done === 'function' && options.done(res, curr, res[response.countName]);
         }
         ,error: function(e, m){
-          that.layMain.html('<div class="'+ NONE +'">数据接口请求异常：'+ m +'</div>');
+          that.layMain.html('<div class="'+ NONE +'">'+ layer.ajaxErrorMsg(e) +'</div>');
           that.renderForm();
           that.setColsWidth();
         }
@@ -1177,6 +1176,7 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
     }
 
     that.layMain.css('height', bodyHeight);
+    options.height = bodyHeight;
   };
   
   //获取滚动条宽度

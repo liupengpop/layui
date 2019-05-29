@@ -388,6 +388,24 @@ layui.define('layer', function(exports){
         }
         
         selects.each(function(index, select){
+        	if($(this).attr('convert')&&!$(this).hasClass('loaded')){
+        		$(this).addClass('loaded');
+        		var html = layer.buildConvertOptions($(this).attr('convert'));
+        		$(this).append(html);
+        	}else if($(this).attr('src')&&$(this).attr('code')&&$(this).attr('show')&&!$(this).hasClass('loaded')){
+        		$(this).addClass('loaded');
+        		var that = $(this),code = $(this).attr('code'),show = $(this).attr('show');
+        		layer.ajax({
+            		url : $(this).attr('src'),
+            		async : false,
+					success: function(result){
+						var records = result.data;
+						var html = layer.buildSelectOptions(records,code,show);
+						that.append(html);
+			      	}
+				});
+        	}
+        	
           var othis = $(this)
           ,hasRender = othis.next('.'+CLASS)
           ,disabled = this.disabled
