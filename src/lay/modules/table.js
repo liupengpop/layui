@@ -773,6 +773,12 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
           ,content = layer.getFieldValue(item1,field);
           
           if(content === undefined || content === null) content = '';
+          
+          if(item3.field&&item3.convert){
+    		  var convertRecord = that.config.convertArray[item3.convert];
+    		  content = (convertRecord&&convertRecord[content])||content;
+    	  }
+          
           if(item3.colGroup) return;
           
           //td内容
@@ -934,11 +940,6 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util'], function(exports){
       that.eachCols(function(i3, item3){
         var field = item3.field || i3
         ,content = layer.getFieldValue(item1,field);
-        
-  	    if(item3.field&&item3.convert){
-		  var convertRecord = that.config.convertArray[item3.convert];
-		  content = (convertRecord&&convertRecord[content])||content;
-	    }
   	  
         if(item3.totalRow){ 
           totalNums[field] = (totalNums[field] || 0) + (parseFloat(content) || 0);

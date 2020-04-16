@@ -102,12 +102,14 @@ layui.define('layer', function(exports){
   };
   
   //表单控件渲染
-  Form.prototype.render = function(type, filter){
+  Form.prototype.render = function(type, filter,elemForm){
     var that = this
-    ,elemForm = $(ELEM + function(){
-      return filter ? ('[lay-filter="' + filter +'"]') : '';
-    }())
-    ,items = {
+    if(!elemForm){
+    	elemForm = $(ELEM + function(){
+            return filter ? ('[lay-filter="' + filter +'"]') : '';
+        }());
+    }
+    var items = {
       
       //下拉选择框
       select: function(){
@@ -696,5 +698,3 @@ layui.define('layer', function(exports){
   
   exports(MOD_NAME, form);
 });
-
- 
